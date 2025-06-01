@@ -21,4 +21,10 @@
         <item name="colorOutline">@color/md_theme_light_outline</item>
         <item name="android:statusBarColor">@color/md_theme_light_surface</item>
     </style>
+
+    <style name="Theme.GroceryPing.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+    </style>
 </resources>
