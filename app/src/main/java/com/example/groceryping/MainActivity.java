@@ -54,9 +54,17 @@ import android.util.Log;
 import android.os.PowerManager;
 import android.net.Uri;
 import android.provider.Settings;
+import com.example.groceryping.ads.AdManager;
+import com.example.groceryping.data.GroceryItemDao;
 
 public class MainActivity extends AppCompatActivity implements OnItemClickListener {
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
+    private static final String[] REQUIRED_PERMISSIONS = {
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.ACCESS_BACKGROUND_LOCATION,
+            Manifest.permission.POST_NOTIFICATIONS
+    };
     private GroceryViewModel groceryViewModel;
     private ReminderViewModel reminderViewModel;
     private GroceryAdapter adapter;
@@ -71,6 +79,10 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
     private View emptyRemindersView;
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a", Locale.getDefault());
+    private GroceryItemDao groceryItemDao;
+    private AdManager adManager;
+    private int itemAddCount = 0;
+    private static final int ITEMS_BEFORE_INTERSTITIAL = 3;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -130,6 +142,17 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
 
         setupReminderRecyclerView();
         observeReminders();
+
+        // Initialize AdManager
+        adManager = AdManager.getInstance(this);
+        adManager.loadInterstitialAd();
+        adManager.loadRewardedAd();
+
+        // Load banner ad
+        View adContainer = findViewById(R.id.adContainer);
+        if (adContainer != null) {
+            adManager.loadBannerAd((ViewGroup) adContainer);
+        }
     }
 
     private void setupReminderRecyclerView() {
@@ -224,6 +247,13 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
                 GroceryItem item = new GroceryItem(name, storeName, category, price, quantity);
                 groceryViewModel.insert(item);
                 showSnackbar("Item added");
+
+                // After successful item addition:
+                itemAddCount++;
+                if (itemAddCount >= ITEMS_BEFORE_INTERSTITIAL) {
+                    adManager.showInterstitialAd(this);
+                    itemAddCount = 0;
+                }
             } catch (NumberFormatException e) {
                 Toast.makeText(this, "Invalid price or quantity", Toast.LENGTH_SHORT).show();
             }
@@ -489,36 +519,12 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
     }
 
     private void checkLocationPermissions() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            // Show explanation if needed
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this, 
-                    Manifest.permission.ACCESS_FINE_LOCATION)) {
-                new AlertDialog.Builder(this)
-                    .setTitle("Location Permission Needed")
-                    .setMessage("This app needs location permission to notify you when you're near stores.")
-                    .setPositiveButton("OK", (dialog, which) -> {
-                        ActivityCompat.requestPermissions(
-                            this,
-                            new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                            LOCATION_PERMISSION_REQUEST_CODE
-                        );
-                    })
-                    .setNegativeButton("Cancel", (dialog, which) -> {
-                        switchLocationService.setChecked(false);
-                    })
-                    .create()
-                    .show();
-            } else {
-                ActivityCompat.requestPermissions(
-                    this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    LOCATION_PERMISSION_REQUEST_CODE
-                );
+        for (String permission : REQUIRED_PERMISSIONS) {
+            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                return;
             }
-        } else {
-            startLocationService();
         }
+        startLocationService();
     }
 
     private void startLocationService() {
@@ -636,7 +642,14 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
                                          @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            boolean allGranted = true;
+            for (int result : grantResults) {
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    allGranted = false;
+                    break;
+                }
+            }
+            if (allGranted) {
                 startLocationService();
             } else {
                 switchLocationService.setChecked(false);
@@ -665,5 +678,11 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
                 Log.d("MainActivity", "Test store added with ID: " + dieppeWalmart.getId());
             });
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        executorService.shutdown();
     }
 }
