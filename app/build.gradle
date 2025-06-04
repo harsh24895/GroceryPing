@@ -43,7 +43,6 @@ dependencies {
     
     // Room components
     implementation 'androidx.room:room-runtime:2.6.1'
-    implementation 'androidx.core:core-splashscreen:1.0.1'
     annotationProcessor 'androidx.room:room-compiler:2.6.1'
     
     // RecyclerView
@@ -57,6 +56,9 @@ dependencies {
     
     // Google Play Services Ads
     implementation 'com.google.android.gms:play-services-ads:22.6.0'
+    
+    // Splash Screen
+    implementation 'androidx.core:core-splashscreen:1.0.1'
     
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

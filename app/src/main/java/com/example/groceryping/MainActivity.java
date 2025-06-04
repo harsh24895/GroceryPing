@@ -56,7 +56,6 @@ import android.net.Uri;
 import android.provider.Settings;
 import com.example.groceryping.ads.AdManager;
 import com.example.groceryping.data.GroceryItemDao;
-import androidx.core.splashscreen.SplashScreen;
 
 public class MainActivity extends AppCompatActivity implements OnItemClickListener {
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
@@ -87,131 +86,72 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        try {
-            super.onCreate(savedInstanceState);
-            setContentView(R.layout.activity_main);
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-            // Initialize ViewModels
-            try {
-                groceryViewModel = new ViewModelProvider(this).get(GroceryViewModel.class);
-                reminderViewModel = new ViewModelProvider(this, new ReminderViewModelFactory(getApplication()))
-                        .get(ReminderViewModel.class);
-            } catch (Exception e) {
-                Log.e("MainActivity", "Error initializing ViewModels", e);
-                Toast.makeText(this, "Error initializing app data", Toast.LENGTH_LONG).show();
-                return;
+        // Initialize ViewModels
+        groceryViewModel = new ViewModelProvider(this).get(GroceryViewModel.class);
+        reminderViewModel = new ViewModelProvider(this, new ReminderViewModelFactory(getApplication()))
+                .get(ReminderViewModel.class);
+
+        // Initialize RecyclerView
+        recyclerView = findViewById(R.id.recyclerView);
+        adapter = new GroceryAdapter(this);
+        recyclerView.setAdapter(adapter);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        // Initialize empty state view
+        emptyStateView = findViewById(R.id.emptyState);
+        updateGroceryEmptyStateVisibility(true);
+
+        // Setup Floating Action Buttons
+        FloatingActionButton fabAddItem = findViewById(R.id.fabAddItem);
+        fabAddItem.setOnClickListener(view -> showAddItemDialog());
+
+        FloatingActionButton fabAddReminder = findViewById(R.id.fabAddReminder);
+        fabAddReminder.setOnClickListener(view -> showAddReminderDialog());
+
+        // Add store button
+        fabAddStore = findViewById(R.id.fabAddStore);
+        fabAddStore.setOnClickListener(v -> {
+            Intent intent = new Intent(this, StoresActivity.class);
+            startActivity(intent);
+        });
+
+        // Initialize selected date and time
+        selectedDateTime = Calendar.getInstance();
+
+        // Initialize location service switch
+        switchLocationService = findViewById(R.id.switchLocationService);
+        switchLocationService.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                checkLocationPermissions();
+            } else {
+                stopLocationService();
             }
+        });
 
-            // Initialize RecyclerView
-            try {
-                recyclerView = findViewById(R.id.recyclerView);
-                if (recyclerView == null) {
-                    throw new IllegalStateException("RecyclerView not found in layout");
-                }
-                adapter = new GroceryAdapter(this);
-                recyclerView.setAdapter(adapter);
-                recyclerView.setLayoutManager(new LinearLayoutManager(this));
-            } catch (Exception e) {
-                Log.e("MainActivity", "Error initializing RecyclerView", e);
-                Toast.makeText(this, "Error setting up list view", Toast.LENGTH_LONG).show();
-                return;
-            }
+        // Observe grocery items
+        groceryViewModel.getAllItems().observe(this, items -> {
+            adapter.setItems(items);
+            updateGroceryEmptyStateVisibility(items.isEmpty());
+        });
 
-            // Initialize empty state view
-            try {
-                emptyStateView = findViewById(R.id.emptyState);
-                if (emptyStateView == null) {
-                    throw new IllegalStateException("Empty state view not found in layout");
-                }
-                updateGroceryEmptyStateVisibility(true);
-            } catch (Exception e) {
-                Log.e("MainActivity", "Error initializing empty state view", e);
-            }
+        // Initialize executor service
+        executorService = Executors.newSingleThreadExecutor();
 
-            // Setup Floating Action Buttons
-            try {
-                FloatingActionButton fabAddItem = findViewById(R.id.fabAddItem);
-                if (fabAddItem != null) {
-                    fabAddItem.setOnClickListener(view -> showAddItemDialog());
-                }
+        setupReminderRecyclerView();
+        observeReminders();
 
-                FloatingActionButton fabAddReminder = findViewById(R.id.fabAddReminder);
-                if (fabAddReminder != null) {
-                    fabAddReminder.setOnClickListener(view -> showAddReminderDialog());
-                }
+        // Initialize AdManager
+        adManager = AdManager.getInstance(this);
+        adManager.loadInterstitialAd();
+        adManager.loadRewardedAd();
 
-                fabAddStore = findViewById(R.id.fabAddStore);
-                if (fabAddStore != null) {
-                    fabAddStore.setOnClickListener(v -> {
-                        Intent intent = new Intent(this, StoresActivity.class);
-                        startActivity(intent);
-                    });
-                }
-            } catch (Exception e) {
-                Log.e("MainActivity", "Error setting up FABs", e);
-            }
-
-            // Initialize selected date and time
-            selectedDateTime = Calendar.getInstance();
-
-            // Initialize location service switch
-            try {
-                switchLocationService = findViewById(R.id.switchLocationService);
-                if (switchLocationService != null) {
-                    switchLocationService.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                        if (isChecked) {
-                            checkLocationPermissions();
-                        } else {
-                            stopLocationService();
-                        }
-                    });
-                }
-            } catch (Exception e) {
-                Log.e("MainActivity", "Error initializing location service switch", e);
-            }
-
-            // Observe grocery items
-            try {
-                groceryViewModel.getAllItems().observe(this, items -> {
-                    if (items != null) {
-                        adapter.setItems(items);
-                        updateGroceryEmptyStateVisibility(items.isEmpty());
-                    }
-                });
-            } catch (Exception e) {
-                Log.e("MainActivity", "Error observing grocery items", e);
-            }
-
-            // Initialize executor service
-            executorService = Executors.newSingleThreadExecutor();
-
-            // Setup reminder views
-            try {
-                setupReminderRecyclerView();
-                observeReminders();
-            } catch (Exception e) {
-                Log.e("MainActivity", "Error setting up reminders", e);
-            }
-
-            // Initialize AdManager
-            try {
-                adManager = AdManager.getInstance(this);
-                adManager.loadInterstitialAd();
-                adManager.loadRewardedAd();
-
-                // Load banner ad
-                View adContainer = findViewById(R.id.adContainer);
-                if (adContainer != null) {
-                    adManager.loadBannerAd((ViewGroup) adContainer);
-                }
-            } catch (Exception e) {
-                Log.e("MainActivity", "Error initializing ads", e);
-            }
-
-        } catch (Exception e) {
-            Log.e("MainActivity", "Critical error in onCreate", e);
-            Toast.makeText(this, "Error initializing app", Toast.LENGTH_LONG).show();
-            finish();
+        // Load banner ad
+        View adContainer = findViewById(R.id.adContainer);
+        if (adContainer != null) {
+            adManager.loadBannerAd((ViewGroup) adContainer);
         }
     }
 

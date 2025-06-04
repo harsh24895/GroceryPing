@@ -33,7 +33,8 @@
         <activity
             android:name=".SplashActivity"
             android:exported="true"
-            android:theme="@style/Theme.GroceryPing.NoActionBar">
+            android:theme="@style/Theme.GroceryPing.NoActionBar"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -43,7 +44,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
+            android:theme="@style/Theme.GroceryPing" />
 
         <activity
             android:name=".StoresActivity"
