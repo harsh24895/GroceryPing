@@ -14,18 +14,15 @@ public class SplashActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // Handle the splash screen transition
+        // Disable the default splash screen
         SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
+        splashScreen.setKeepOnScreenCondition(() -> false);
+        
         super.onCreate(savedInstanceState);
-        
-        // Keep the splash screen visible for this Activity
-        splashScreen.setKeepOnScreenCondition(() -> true);
-        
         setContentView(R.layout.activity_splash);
         
-        // Remove the splash screen after delay
+        // Start main activity after delay
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            splashScreen.setKeepOnScreenCondition(() -> false);
             startActivity(new Intent(SplashActivity.this, MainActivity.class));
             finish();
         }, SPLASH_DELAY);
