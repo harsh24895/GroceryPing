@@ -8,7 +8,8 @@ import androidx.room.TypeConverters;
 
 @Database(entities = {GroceryItem.class, StoreLocation.class, Reminder.class}, version = 2, exportSchema = false)
 @TypeConverters({})
-public abstract class GroceryDatabase extends RoomDatabase {
+public abstract class
+GroceryDatabase extends RoomDatabase {
     private static GroceryDatabase instance;
 
     public abstract GroceryItemDao groceryItemDao();

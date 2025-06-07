@@ -12,6 +12,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="true" />
 
     <application
         android:name=".GroceryApplication"
@@ -54,6 +56,12 @@
         <activity
             android:name=".RemindersActivity"
             android:exported="false"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
+            android:name=".BarcodeScannerActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
             android:parentActivityName=".MainActivity" />
 
         <service

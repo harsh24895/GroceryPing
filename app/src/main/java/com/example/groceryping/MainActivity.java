@@ -56,6 +56,7 @@ import android.net.Uri;
 import android.provider.Settings;
 import com.example.groceryping.ads.AdManager;
 import com.example.groceryping.data.GroceryItemDao;
+import androidx.annotation.Nullable;
 
 public class MainActivity extends AppCompatActivity implements OnItemClickListener {
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
@@ -83,6 +84,7 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
     private AdManager adManager;
     private int itemAddCount = 0;
     private static final int ITEMS_BEFORE_INTERSTITIAL = 3;
+    private static final int BARCODE_SCAN_REQUEST_CODE = 1002;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -216,6 +218,7 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
         TextInputEditText categoryInput = dialogView.findViewById(R.id.editTextCategory);
         TextInputEditText priceInput = dialogView.findViewById(R.id.editTextPrice);
         TextInputEditText quantityInput = dialogView.findViewById(R.id.editTextQuantity);
+        MaterialButton scanBarcodeButton = dialogView.findViewById(R.id.buttonScanBarcode);
 
         // Observe stores and populate dropdown
         GroceryDatabase.getInstance(this).storeLocationDao().getAllStores().observe(this, stores -> {
@@ -226,6 +229,12 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
             ArrayAdapter<String> adapter = new ArrayAdapter<>(this, 
                 android.R.layout.simple_dropdown_item_1line, storeNames);
             storeInput.setAdapter(adapter);
+        });
+
+        // Set up barcode scanning
+        scanBarcodeButton.setOnClickListener(v -> {
+            Intent intent = new Intent(this, BarcodeScannerActivity.class);
+            startActivityForResult(intent, BARCODE_SCAN_REQUEST_CODE);
         });
 
         builder.setPositiveButton("Add", (dialog, which) -> {
@@ -684,5 +693,18 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
     protected void onDestroy() {
         super.onDestroy();
         executorService.shutdown();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == BARCODE_SCAN_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
+            String barcode = data.getStringExtra("barcode");
+            if (barcode != null) {
+                // TODO: Implement barcode lookup to get item details
+                // For now, just show the barcode
+                Toast.makeText(this, "Scanned barcode: " + barcode, Toast.LENGTH_LONG).show();
+            }
+        }
     }
 }
