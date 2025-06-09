@@ -19,6 +19,8 @@ import androidx.core.content.ContextCompat;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.mlkit.vision.barcode.BarcodeScanner;
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
 import com.google.mlkit.vision.barcode.BarcodeScanning;
 import com.google.mlkit.vision.barcode.common.Barcode;
 import com.google.mlkit.vision.common.InputImage;
@@ -36,6 +38,7 @@ public class BarcodeScannerActivity extends AppCompatActivity {
     private ExecutorService cameraExecutor;
     private boolean isFlashOn = false;
     private ProcessCameraProvider cameraProvider;
+    private BarcodeScanner barcodeScanner;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,15 +47,11 @@ public class BarcodeScannerActivity extends AppCompatActivity {
             setContentView(R.layout.activity_barcode_scanner);
             Log.d(TAG, "Layout inflated successfully");
 
-            viewFinder = findViewById(R.id.viewFinder);
-            flashButton = findViewById(R.id.flashButton);
-
-            if (viewFinder == null) {
-                Log.e(TAG, "viewFinder is null");
-                Toast.makeText(this, "Error initializing camera view", Toast.LENGTH_SHORT).show();
-                finish();
-                return;
-            }
+            // Initialize views
+            initializeViews();
+            
+            // Initialize barcode scanner
+            initializeBarcodeScanner();
 
             // Request camera permissions
             if (allPermissionsGranted()) {
@@ -64,15 +63,36 @@ public class BarcodeScannerActivity extends AppCompatActivity {
                     this, new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_REQUEST_CODE);
             }
 
-            // Set up the flash button
-            flashButton.setOnClickListener(v -> toggleFlash());
-
             cameraExecutor = Executors.newSingleThreadExecutor();
             Log.d(TAG, "Activity created successfully");
         } catch (Exception e) {
             Log.e(TAG, "Error in onCreate", e);
             Toast.makeText(this, "Error initializing camera", Toast.LENGTH_SHORT).show();
             finish();
+        }
+    }
+
+    private void initializeViews() {
+        viewFinder = findViewById(R.id.viewFinder);
+        flashButton = findViewById(R.id.flashButton);
+
+        if (viewFinder == null) {
+            throw new IllegalStateException("viewFinder is null");
+        }
+
+        // Set up the flash button
+        flashButton.setOnClickListener(v -> toggleFlash());
+    }
+
+    private void initializeBarcodeScanner() {
+        try {
+            BarcodeScannerOptions options = new BarcodeScannerOptions.Builder()
+                .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
+                .build();
+            barcodeScanner = BarcodeScanning.getClient(options);
+        } catch (Exception e) {
+            Log.e(TAG, "Error initializing barcode scanner", e);
+            throw new RuntimeException("Failed to initialize barcode scanner", e);
         }
     }
 
@@ -89,8 +109,10 @@ public class BarcodeScannerActivity extends AppCompatActivity {
                     bindPreview(cameraProvider);
                 } catch (ExecutionException | InterruptedException e) {
                     Log.e(TAG, "Error getting camera provider", e);
-                    Toast.makeText(this, "Error starting camera", Toast.LENGTH_SHORT).show();
-                    finish();
+                    runOnUiThread(() -> {
+                        Toast.makeText(this, "Error starting camera", Toast.LENGTH_SHORT).show();
+                        finish();
+                    });
                 }
             }, ContextCompat.getMainExecutor(this));
         } catch (Exception e) {
@@ -129,8 +151,10 @@ public class BarcodeScannerActivity extends AppCompatActivity {
             Log.d(TAG, "Camera preview bound successfully");
         } catch (Exception e) {
             Log.e(TAG, "Error binding camera preview", e);
-            Toast.makeText(this, "Error binding camera", Toast.LENGTH_SHORT).show();
-            finish();
+            runOnUiThread(() -> {
+                Toast.makeText(this, "Error binding camera", Toast.LENGTH_SHORT).show();
+                finish();
+            });
         }
     }
 
@@ -145,8 +169,7 @@ public class BarcodeScannerActivity extends AppCompatActivity {
             InputImage inputImage = InputImage.fromMediaImage(
                 image.getImage(), image.getImageInfo().getRotationDegrees());
 
-            BarcodeScanning.getClient()
-                .process(inputImage)
+            barcodeScanner.process(inputImage)
                 .addOnSuccessListener(barcodes -> {
                     for (Barcode barcode : barcodes) {
                         String rawValue = barcode.getRawValue();
@@ -224,6 +247,9 @@ public class BarcodeScannerActivity extends AppCompatActivity {
             if (cameraExecutor != null) {
                 Log.d(TAG, "Shutting down camera executor");
                 cameraExecutor.shutdown();
+            }
+            if (barcodeScanner != null) {
+                barcodeScanner.close();
             }
         } catch (Exception e) {
             Log.e(TAG, "Error in onDestroy", e);
