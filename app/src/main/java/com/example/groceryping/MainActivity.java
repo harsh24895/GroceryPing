@@ -66,6 +66,7 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
             Manifest.permission.ACCESS_BACKGROUND_LOCATION,
             Manifest.permission.POST_NOTIFICATIONS
     };
+    private static final String TAG = "MainActivity";
     private GroceryViewModel groceryViewModel;
     private ReminderViewModel reminderViewModel;
     private GroceryAdapter adapter;
@@ -89,72 +90,153 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        try {
+            setContentView(R.layout.activity_main);
+            Log.d(TAG, "Layout inflated successfully");
 
-        // Initialize ViewModels
-        groceryViewModel = new ViewModelProvider(this).get(GroceryViewModel.class);
-        reminderViewModel = new ViewModelProvider(this, new ReminderViewModelFactory(getApplication()))
-                .get(ReminderViewModel.class);
+            // Initialize ViewModels
+            initializeViewModels();
 
-        // Initialize RecyclerView
-        recyclerView = findViewById(R.id.recyclerView);
-        adapter = new GroceryAdapter(this);
-        recyclerView.setAdapter(adapter);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+            // Initialize RecyclerView
+            initializeRecyclerView();
 
-        // Initialize empty state view
-        emptyStateView = findViewById(R.id.emptyState);
-        updateGroceryEmptyStateVisibility(true);
+            // Initialize empty state view
+            initializeEmptyStateView();
 
-        // Setup Floating Action Buttons
-        FloatingActionButton fabAddItem = findViewById(R.id.fabAddItem);
-        fabAddItem.setOnClickListener(view -> showAddItemDialog());
+            // Setup Floating Action Buttons
+            setupFloatingActionButtons();
 
-        FloatingActionButton fabAddReminder = findViewById(R.id.fabAddReminder);
-        fabAddReminder.setOnClickListener(view -> showAddReminderDialog());
+            // Initialize selected date and time
+            selectedDateTime = Calendar.getInstance();
 
-        // Add store button
-        fabAddStore = findViewById(R.id.fabAddStore);
-        fabAddStore.setOnClickListener(v -> {
-            Intent intent = new Intent(this, StoresActivity.class);
-            startActivity(intent);
-        });
+            // Initialize location service switch
+            initializeLocationService();
 
-        // Initialize selected date and time
-        selectedDateTime = Calendar.getInstance();
+            // Observe grocery items
+            observeGroceryItems();
 
-        // Initialize location service switch
-        switchLocationService = findViewById(R.id.switchLocationService);
-        switchLocationService.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                checkLocationPermissions();
-            } else {
-                stopLocationService();
-            }
-        });
+            // Initialize executor service
+            executorService = Executors.newSingleThreadExecutor();
 
-        // Observe grocery items
-        groceryViewModel.getAllItems().observe(this, items -> {
-            adapter.setItems(items);
-            updateGroceryEmptyStateVisibility(items.isEmpty());
-        });
+            setupReminderRecyclerView();
+            observeReminders();
 
-        // Initialize executor service
-        executorService = Executors.newSingleThreadExecutor();
+            // Initialize AdManager
+            initializeAdManager();
 
-        setupReminderRecyclerView();
-        observeReminders();
-
-        // Initialize AdManager
-        adManager = AdManager.getInstance(this);
-        adManager.loadInterstitialAd();
-        adManager.loadRewardedAd();
-
-        // Load banner ad
-        View adContainer = findViewById(R.id.adContainer);
-        if (adContainer != null) {
-            adManager.loadBannerAd((ViewGroup) adContainer);
+            Log.d(TAG, "Activity created successfully");
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onCreate", e);
+            showErrorAndFinish("Failed to initialize app: " + e.getMessage());
         }
+    }
+
+    private void initializeViewModels() {
+        try {
+            groceryViewModel = new ViewModelProvider(this).get(GroceryViewModel.class);
+            reminderViewModel = new ViewModelProvider(this, 
+                new ReminderViewModelFactory(getApplication())).get(ReminderViewModel.class);
+        } catch (Exception e) {
+            Log.e(TAG, "Error initializing ViewModels", e);
+            throw new RuntimeException("Failed to initialize ViewModels", e);
+        }
+    }
+
+    private void initializeRecyclerView() {
+        try {
+            recyclerView = findViewById(R.id.recyclerView);
+            adapter = new GroceryAdapter(this);
+            recyclerView.setAdapter(adapter);
+            recyclerView.setLayoutManager(new LinearLayoutManager(this));
+            recyclerView.setHasFixedSize(true);
+            recyclerView.setItemViewCacheSize(20);
+        } catch (Exception e) {
+            Log.e(TAG, "Error initializing RecyclerView", e);
+            throw new RuntimeException("Failed to initialize RecyclerView", e);
+        }
+    }
+
+    private void initializeEmptyStateView() {
+        try {
+            emptyStateView = findViewById(R.id.emptyState);
+            updateGroceryEmptyStateVisibility(true);
+        } catch (Exception e) {
+            Log.e(TAG, "Error initializing empty state view", e);
+            throw new RuntimeException("Failed to initialize empty state view", e);
+        }
+    }
+
+    private void setupFloatingActionButtons() {
+        try {
+            FloatingActionButton fabAddItem = findViewById(R.id.fabAddItem);
+            fabAddItem.setOnClickListener(view -> showAddItemDialog());
+
+            FloatingActionButton fabAddReminder = findViewById(R.id.fabAddReminder);
+            fabAddReminder.setOnClickListener(view -> showAddReminderDialog());
+
+            fabAddStore = findViewById(R.id.fabAddStore);
+            fabAddStore.setOnClickListener(v -> {
+                Intent intent = new Intent(this, StoresActivity.class);
+                startActivity(intent);
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up FABs", e);
+            throw new RuntimeException("Failed to setup FABs", e);
+        }
+    }
+
+    private void initializeLocationService() {
+        try {
+            switchLocationService = findViewById(R.id.switchLocationService);
+            switchLocationService.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    checkLocationPermissions();
+                } else {
+                    stopLocationService();
+                }
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Error initializing location service", e);
+            throw new RuntimeException("Failed to initialize location service", e);
+        }
+    }
+
+    private void initializeAdManager() {
+        try {
+            adManager = AdManager.getInstance(this);
+            adManager.loadInterstitialAd();
+            adManager.loadRewardedAd();
+
+            View adContainer = findViewById(R.id.adContainer);
+            if (adContainer != null) {
+                adManager.loadBannerAd((ViewGroup) adContainer);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error initializing AdManager", e);
+            // Don't throw here as ads are not critical
+        }
+    }
+
+    private void observeGroceryItems() {
+        try {
+            groceryViewModel.getAllItems().observe(this, items -> {
+                Log.d(TAG, "Grocery items updated. Count: " + items.size());
+                adapter.setItems(items);
+                updateGroceryEmptyStateVisibility(items.isEmpty());
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Error observing grocery items", e);
+            throw new RuntimeException("Failed to observe grocery items", e);
+        }
+    }
+
+    private void showErrorAndFinish(String message) {
+        new AlertDialog.Builder(this)
+            .setTitle("Error")
+            .setMessage(message)
+            .setPositiveButton("OK", (dialog, which) -> finish())
+            .setCancelable(false)
+            .show();
     }
 
     private void setupReminderRecyclerView() {
