@@ -5,19 +5,22 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/background_light">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:background="@color/primary"
+        app:elevation="0dp">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorSurface"
+            android:background="@color/primary"
             app:title="GroceryPing"
-            app:titleTextColor="?attr/colorOnSurface"
+            app:titleTextColor="@color/white"
             app:elevation="0dp">
 
             <LinearLayout
@@ -32,13 +35,15 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Location"
+                    android:textColor="@color/white"
                     android:textSize="14sp"
                     android:layout_marginEnd="8dp"/>
 
                 <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/switchLocationService"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    android:theme="@style/Widget.GroceryPing.Switch"/>
 
             </LinearLayout>
 
@@ -61,16 +66,17 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Grocery Items"
-                android:textSize="18sp"
+                android:textSize="24sp"
                 android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
+                android:textColor="@color/text_primary"
+                android:layout_marginBottom="16dp"/>
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="8dp"
-                android:clipToPadding="false"/>
+                android:clipToPadding="false"
+                android:padding="8dp"/>
 
             <include
                 android:id="@+id/emptyState"
@@ -83,15 +89,17 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Reminders"
-                android:textSize="18sp"
+                android:textSize="24sp"
                 android:textStyle="bold"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="8dp"/>
+                android:textColor="@color/text_primary"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="16dp"/>
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/reminderRecyclerView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:clipToPadding="false"
                 android:padding="8dp"/>
 
             <include
@@ -139,6 +147,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:minHeight="50dp"/>
+        android:minHeight="50dp"
+        android:background="@color/surface_light"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
