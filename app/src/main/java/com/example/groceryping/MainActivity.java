@@ -94,35 +94,26 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
             setContentView(R.layout.activity_main);
             Log.d(TAG, "Layout inflated successfully");
 
-            // Initialize ViewModels
+            // Initialize executor service first
+            executorService = Executors.newSingleThreadExecutor();
+
+            // Initialize ViewModels on UI thread first
             initializeViewModels();
 
-            // Initialize RecyclerView
+            // Initialize UI components
             initializeRecyclerView();
-
-            // Initialize empty state view
             initializeEmptyStateView();
-
-            // Setup Floating Action Buttons
             setupFloatingActionButtons();
+            initializeLocationService();
 
             // Initialize selected date and time
             selectedDateTime = Calendar.getInstance();
 
-            // Initialize location service switch
-            initializeLocationService();
-
-            // Observe grocery items
-            observeGroceryItems();
-
-            // Initialize executor service
-            executorService = Executors.newSingleThreadExecutor();
-
+            // Setup reminder RecyclerView
             setupReminderRecyclerView();
-            observeReminders();
 
-            // Initialize AdManager
-            initializeAdManager();
+            // Initialize AdManager in background
+            executorService.execute(this::initializeAdManager);
 
             Log.d(TAG, "Activity created successfully");
         } catch (Exception e) {
@@ -133,12 +124,17 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
 
     private void initializeViewModels() {
         try {
+            // Initialize ViewModels on UI thread
             groceryViewModel = new ViewModelProvider(this).get(GroceryViewModel.class);
             reminderViewModel = new ViewModelProvider(this, 
                 new ReminderViewModelFactory(getApplication())).get(ReminderViewModel.class);
+
+            // Set up observers after ViewModels are initialized
+            observeGroceryItems();
+            observeReminders();
         } catch (Exception e) {
             Log.e(TAG, "Error initializing ViewModels", e);
-            throw new RuntimeException("Failed to initialize ViewModels", e);
+            showErrorAndFinish("Failed to initialize ViewModels");
         }
     }
 
@@ -203,17 +199,19 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
 
     private void initializeAdManager() {
         try {
-            adManager = AdManager.getInstance(this);
-            adManager.loadInterstitialAd();
-            adManager.loadRewardedAd();
+            runOnUiThread(() -> {
+                adManager = AdManager.getInstance(MainActivity.this);
+                adManager.loadInterstitialAd();
+                adManager.loadRewardedAd();
 
-            View adContainer = findViewById(R.id.adContainer);
-            if (adContainer != null) {
-                adManager.loadBannerAd((ViewGroup) adContainer);
-            }
+                View adContainer = findViewById(R.id.adContainer);
+                if (adContainer != null) {
+                    adManager.loadBannerAd((ViewGroup) adContainer);
+                }
+            });
         } catch (Exception e) {
             Log.e(TAG, "Error initializing AdManager", e);
-            // Don't throw here as ads are not critical
+            // Don't show error as ads are not critical
         }
     }
 
@@ -221,12 +219,13 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
         try {
             groceryViewModel.getAllItems().observe(this, items -> {
                 Log.d(TAG, "Grocery items updated. Count: " + items.size());
-                adapter.setItems(items);
-                updateGroceryEmptyStateVisibility(items.isEmpty());
+                if (adapter != null) {
+                    adapter.setItems(items);
+                    updateGroceryEmptyStateVisibility(items.isEmpty());
+                }
             });
         } catch (Exception e) {
             Log.e(TAG, "Error observing grocery items", e);
-            throw new RuntimeException("Failed to observe grocery items", e);
         }
     }
 
@@ -262,11 +261,17 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
     }
 
     private void observeReminders() {
-        reminderViewModel.getAllReminders().observe(this, reminders -> {
-            Log.d("MainActivity", "Reminders updated. Count: " + reminders.size());
-            reminderAdapter.setReminders(reminders);
-            updateReminderEmptyStateVisibility(reminders.isEmpty());
-        });
+        try {
+            reminderViewModel.getAllReminders().observe(this, reminders -> {
+                Log.d(TAG, "Reminders updated. Count: " + reminders.size());
+                if (reminderAdapter != null) {
+                    reminderAdapter.setReminders(reminders);
+                    updateReminderEmptyStateVisibility(reminders.isEmpty());
+                }
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Error observing reminders", e);
+        }
     }
 
     private void updateGroceryEmptyStateVisibility(boolean isEmpty) {
@@ -336,15 +341,18 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
                 int quantity = quantityStr.isEmpty() ? 1 : Integer.parseInt(quantityStr);
                 
                 GroceryItem item = new GroceryItem(name, storeName, category, price, quantity);
-                groceryViewModel.insert(item);
-                showSnackbar("Item added");
-
-                // After successful item addition:
-                itemAddCount++;
-                if (itemAddCount >= ITEMS_BEFORE_INTERSTITIAL) {
-                    adManager.showInterstitialAd(this);
-                    itemAddCount = 0;
-                }
+                executorService.execute(() -> {
+                    groceryViewModel.insert(item);
+                    runOnUiThread(() -> {
+                        showSnackbar("Item added");
+                        // After successful item addition:
+                        itemAddCount++;
+                        if (itemAddCount >= ITEMS_BEFORE_INTERSTITIAL) {
+                            adManager.showInterstitialAd(this);
+                            itemAddCount = 0;
+                        }
+                    });
+                });
             } catch (NumberFormatException e) {
                 Toast.makeText(this, "Invalid price or quantity", Toast.LENGTH_SHORT).show();
             }
@@ -774,7 +782,9 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        executorService.shutdown();
+        if (executorService != null && !executorService.isShutdown()) {
+            executorService.shutdown();
+        }
     }
 
     @Override
