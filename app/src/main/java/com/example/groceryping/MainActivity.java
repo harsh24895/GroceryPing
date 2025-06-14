@@ -57,6 +57,8 @@ import android.provider.Settings;
 import com.example.groceryping.ads.AdManager;
 import com.example.groceryping.data.GroceryItemDao;
 import androidx.annotation.Nullable;
+import android.text.Editable;
+import android.text.TextWatcher;
 
 public class MainActivity extends AppCompatActivity implements OnItemClickListener {
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
@@ -189,6 +191,24 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
                     checkLocationPermissions();
                 } else {
                     stopLocationService();
+                }
+            });
+
+            // Initialize search functionality
+            TextInputEditText searchInput = findViewById(R.id.searchInput);
+            searchInput.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    String query = s.toString().toLowerCase().trim();
+                    if (adapter != null) {
+                        adapter.filter(query);
+                    }
                 }
             });
         } catch (Exception e) {

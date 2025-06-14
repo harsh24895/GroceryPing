@@ -10,10 +10,12 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.groceryping.data.GroceryItem;
 import com.example.groceryping.R;
+import java.util.ArrayList;
 import java.util.List;
 
-public class GroceryAdapter extends RecyclerView.Adapter<GroceryAdapter.GroceryViewHolder> {
+public class GroceryAdapter extends RecyclerView.Adapter<GroceryAdapter.ViewHolder> {
     private List<GroceryItem> items;
+    private List<GroceryItem> filteredItems;
     private final OnItemClickListener listener;
 
     public interface OnItemClickListener {
@@ -24,58 +26,79 @@ public class GroceryAdapter extends RecyclerView.Adapter<GroceryAdapter.GroceryV
 
     public GroceryAdapter(OnItemClickListener listener) {
         this.listener = listener;
+        this.items = new ArrayList<>();
+        this.filteredItems = new ArrayList<>();
     }
 
     @NonNull
     @Override
-    public GroceryViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_grocery, parent, false);
-        return new GroceryViewHolder(view);
+        return new ViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull GroceryViewHolder holder, int position) {
-        GroceryItem item = items.get(position);
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        GroceryItem item = filteredItems.get(position);
         holder.bind(item, listener);
     }
 
     @Override
     public int getItemCount() {
-        return items == null ? 0 : items.size();
+        return filteredItems.size();
     }
 
-    public void setItems(List<GroceryItem> items) {
-        this.items = items;
+    public void setItems(List<GroceryItem> newItems) {
+        this.items = new ArrayList<>(newItems);
+        this.filteredItems = new ArrayList<>(newItems);
         notifyDataSetChanged();
     }
 
-    static class GroceryViewHolder extends RecyclerView.ViewHolder {
-        private final TextView textViewName;
-        private final TextView textViewDetails;
-        private final CheckBox checkBoxCompleted;
-        private final ImageButton buttonDelete;
+    public void filter(String query) {
+        filteredItems.clear();
+        if (query.isEmpty()) {
+            filteredItems.addAll(items);
+        } else {
+            for (GroceryItem item : items) {
+                if (item.getName().toLowerCase().contains(query) ||
+                    item.getCategory().toLowerCase().contains(query) ||
+                    item.getLocation().toLowerCase().contains(query)) {
+                    filteredItems.add(item);
+                }
+            }
+        }
+        notifyDataSetChanged();
+    }
 
-        public GroceryViewHolder(@NonNull View itemView) {
-            super(itemView);
-            textViewName = itemView.findViewById(R.id.textViewName);
-            textViewDetails = itemView.findViewById(R.id.textViewDetails);
-            checkBoxCompleted = itemView.findViewById(R.id.checkBoxCompleted);
-            buttonDelete = itemView.findViewById(R.id.buttonDelete);
+    static class ViewHolder extends RecyclerView.ViewHolder {
+        private final TextView nameText;
+        private final TextView categoryText;
+        private final TextView locationText;
+        private final TextView priceText;
+        private final CheckBox checkBox;
+        private final ImageButton deleteButton;
+
+        ViewHolder(View view) {
+            super(view);
+            nameText = view.findViewById(R.id.textName);
+            categoryText = view.findViewById(R.id.textCategory);
+            locationText = view.findViewById(R.id.textLocation);
+            priceText = view.findViewById(R.id.textPrice);
+            checkBox = view.findViewById(R.id.checkBox);
+            deleteButton = view.findViewById(R.id.buttonDelete);
         }
 
-        public void bind(GroceryItem item, OnItemClickListener listener) {
-            textViewName.setText(item.getName());
-            String details = String.format("%s • %d x $%.2f", 
-                item.getLocation(), 
-                item.getQuantity(), 
-                item.getPrice());
-            textViewDetails.setText(details);
-            checkBoxCompleted.setChecked(item.isCompleted());
+        void bind(GroceryItem item, OnItemClickListener listener) {
+            nameText.setText(item.getName());
+            categoryText.setText(item.getCategory());
+            locationText.setText(item.getLocation());
+            priceText.setText(String.format("$%.2f", item.getPrice()));
+            checkBox.setChecked(item.isCompleted());
 
             itemView.setOnClickListener(v -> listener.onItemClick(item));
-            buttonDelete.setOnClickListener(v -> listener.onDeleteClick(item));
-            checkBoxCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> 
+            deleteButton.setOnClickListener(v -> listener.onDeleteClick(item));
+            checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> 
                 listener.onCheckBoxClick(item, isChecked));
         }
     }
