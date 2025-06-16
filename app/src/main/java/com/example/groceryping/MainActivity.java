@@ -99,10 +99,7 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
             // Initialize executor service first
             executorService = Executors.newSingleThreadExecutor();
 
-            // Initialize ViewModels on UI thread first
-            initializeViewModels();
-
-            // Initialize UI components
+            // Initialize UI components first
             initializeRecyclerView();
             initializeEmptyStateView();
             setupFloatingActionButtons();
@@ -113,6 +110,11 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
 
             // Setup reminder RecyclerView
             setupReminderRecyclerView();
+
+            // Initialize ViewModels and observers in background
+            executorService.execute(() -> {
+                runOnUiThread(this::initializeViewModels);
+            });
 
             // Initialize AdManager in background
             executorService.execute(this::initializeAdManager);
@@ -136,7 +138,7 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
             observeReminders();
         } catch (Exception e) {
             Log.e(TAG, "Error initializing ViewModels", e);
-            showErrorAndFinish("Failed to initialize ViewModels");
+            runOnUiThread(() -> showErrorAndFinish("Failed to initialize ViewModels"));
         }
     }
 
@@ -238,6 +240,7 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
     private void observeGroceryItems() {
         try {
             groceryViewModel.getAllItems().observe(this, items -> {
+                if (isFinishing()) return; // Prevent updates if activity is finishing
                 Log.d(TAG, "Grocery items updated. Count: " + items.size());
                 if (adapter != null) {
                     adapter.setItems(items);
@@ -283,7 +286,7 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
     private void observeReminders() {
         try {
             reminderViewModel.getAllReminders().observe(this, reminders -> {
-                Log.d(TAG, "Reminders updated. Count: " + reminders.size());
+                if (isFinishing()) return; // Prevent updates if activity is finishing
                 if (reminderAdapter != null) {
                     reminderAdapter.setReminders(reminders);
                     updateReminderEmptyStateVisibility(reminders.isEmpty());
@@ -802,8 +805,11 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (executorService != null && !executorService.isShutdown()) {
+        if (executorService != null) {
             executorService.shutdown();
+        }
+        if (adManager != null) {
+            adManager.destroy();
         }
     }
 

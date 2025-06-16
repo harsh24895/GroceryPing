@@ -149,4 +149,12 @@ public class AdManager {
     public interface OnRewardedAdListener {
         void onRewarded(String type, int amount);
     }
+
+    public void destroy() {
+        // Clear ad references
+        mInterstitialAd = null;
+        mRewardedAd = null;
+        context = null;
+        instance = null;
+    }
 } 
