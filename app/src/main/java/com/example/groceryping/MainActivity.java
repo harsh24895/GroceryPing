@@ -103,7 +103,6 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
             initializeRecyclerView();
             initializeEmptyStateView();
             setupFloatingActionButtons();
-            initializeLocationService();
 
             // Initialize selected date and time
             selectedDateTime = Calendar.getInstance();
@@ -113,11 +112,39 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
 
             // Initialize ViewModels and observers in background
             executorService.execute(() -> {
-                runOnUiThread(this::initializeViewModels);
+                try {
+                    runOnUiThread(this::initializeViewModels);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error initializing ViewModels", e);
+                }
             });
 
             // Initialize AdManager in background
-            executorService.execute(this::initializeAdManager);
+            executorService.execute(() -> {
+                try {
+                    adManager = AdManager.getInstance(this);
+                    runOnUiThread(() -> {
+                        try {
+                            adManager.loadBannerAd(findViewById(R.id.adContainer));
+                            adManager.loadInterstitialAd();
+                            adManager.loadRewardedAd();
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error loading ads", e);
+                        }
+                    });
+                } catch (Exception e) {
+                    Log.e(TAG, "Error initializing AdManager", e);
+                }
+            });
+
+            // Initialize location service in background
+            executorService.execute(() -> {
+                try {
+                    initializeLocationService();
+                } catch (Exception e) {
+                    Log.e(TAG, "Error initializing location service", e);
+                }
+            });
 
             Log.d(TAG, "Activity created successfully");
         } catch (Exception e) {
@@ -219,24 +246,6 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
         }
     }
 
-    private void initializeAdManager() {
-        try {
-            runOnUiThread(() -> {
-                adManager = AdManager.getInstance(MainActivity.this);
-                adManager.loadInterstitialAd();
-                adManager.loadRewardedAd();
-
-                View adContainer = findViewById(R.id.adContainer);
-                if (adContainer != null) {
-                    adManager.loadBannerAd((ViewGroup) adContainer);
-                }
-            });
-        } catch (Exception e) {
-            Log.e(TAG, "Error initializing AdManager", e);
-            // Don't show error as ads are not critical
-        }
-    }
-
     private void observeGroceryItems() {
         try {
             groceryViewModel.getAllItems().observe(this, items -> {
@@ -253,12 +262,17 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
     }
 
     private void showErrorAndFinish(String message) {
-        new AlertDialog.Builder(this)
-            .setTitle("Error")
-            .setMessage(message)
-            .setPositiveButton("OK", (dialog, which) -> finish())
-            .setCancelable(false)
-            .show();
+        try {
+            new AlertDialog.Builder(this)
+                .setTitle("Error")
+                .setMessage(message)
+                .setPositiveButton("OK", (dialog, which) -> finish())
+                .setCancelable(false)
+                .show();
+        } catch (Exception e) {
+            Log.e(TAG, "Error showing error dialog", e);
+            finish();
+        }
     }
 
     private void setupReminderRecyclerView() {
