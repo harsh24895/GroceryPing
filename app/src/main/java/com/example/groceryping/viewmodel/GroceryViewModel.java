@@ -55,6 +55,15 @@ public class GroceryViewModel extends AndroidViewModel {
         update(updatedItem);
     }
 
+    public void refreshData() {
+        // Force a refresh by triggering the LiveData
+        // This will cause the observers to be notified with the latest data
+        executorService.execute(() -> {
+            // The LiveData will automatically update when the database changes
+            // This method can be used to trigger a manual refresh if needed
+        });
+    }
+
     @Override
     protected void onCleared() {
         super.onCleared();

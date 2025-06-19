@@ -71,6 +71,13 @@ public class GroceryAdapter extends RecyclerView.Adapter<GroceryAdapter.ViewHold
         notifyDataSetChanged();
     }
 
+    public GroceryItem getItemAt(int position) {
+        if (position >= 0 && position < filteredItems.size()) {
+            return filteredItems.get(position);
+        }
+        return null;
+    }
+
     static class ViewHolder extends RecyclerView.ViewHolder {
         private final TextView nameText;
         private final TextView categoryText;

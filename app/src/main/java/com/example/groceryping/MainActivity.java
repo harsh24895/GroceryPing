@@ -59,6 +59,7 @@ import com.example.groceryping.data.GroceryItemDao;
 import androidx.annotation.Nullable;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity implements OnItemClickListener {
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
@@ -177,6 +178,52 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
             recyclerView.setLayoutManager(new LinearLayoutManager(this));
             recyclerView.setHasFixedSize(true);
             recyclerView.setItemViewCacheSize(20);
+
+            // Add swipe-to-delete functionality
+            androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback swipeCallback = 
+                new androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(0, 
+                    androidx.recyclerview.widget.ItemTouchHelper.LEFT | 
+                    androidx.recyclerview.widget.ItemTouchHelper.RIGHT) {
+                @Override
+                public boolean onMove(@NonNull RecyclerView recyclerView, 
+                                    @NonNull RecyclerView.ViewHolder viewHolder, 
+                                    @NonNull RecyclerView.ViewHolder target) {
+                    return false;
+                }
+
+                @Override
+                public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                    int position = viewHolder.getAdapterPosition();
+                    if (adapter != null && position >= 0 && position < adapter.getItemCount()) {
+                        GroceryItem item = adapter.getItemAt(position);
+                        if (item != null) {
+                            groceryViewModel.delete(item);
+                            showSnackbar("Item deleted");
+                        }
+                    }
+                }
+            };
+
+            new androidx.recyclerview.widget.ItemTouchHelper(swipeCallback).attachToRecyclerView(recyclerView);
+
+            // Setup pull-to-refresh
+            androidx.swiperefreshlayout.widget.SwipeRefreshLayout swipeRefreshLayout = 
+                findViewById(R.id.swipeRefreshLayout);
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                // Refresh data
+                if (groceryViewModel != null) {
+                    groceryViewModel.refreshData();
+                }
+                if (reminderViewModel != null) {
+                    reminderViewModel.refreshData();
+                }
+                
+                // Hide refresh indicator after a short delay
+                swipeRefreshLayout.postDelayed(() -> {
+                    swipeRefreshLayout.setRefreshing(false);
+                }, 1000);
+            });
+
         } catch (Exception e) {
             Log.e(TAG, "Error initializing RecyclerView", e);
             throw new RuntimeException("Failed to initialize RecyclerView", e);
@@ -254,10 +301,42 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
                 if (adapter != null) {
                     adapter.setItems(items);
                     updateGroceryEmptyStateVisibility(items.isEmpty());
+                    updateShoppingListSummary(items);
                 }
             });
         } catch (Exception e) {
             Log.e(TAG, "Error observing grocery items", e);
+        }
+    }
+
+    private void updateShoppingListSummary(List<GroceryItem> items) {
+        try {
+            int totalItems = items.size();
+            int completedItems = 0;
+            double totalPrice = 0.0;
+
+            for (GroceryItem item : items) {
+                if (item.isCompleted()) {
+                    completedItems++;
+                }
+                totalPrice += item.getPrice() * item.getQuantity();
+            }
+
+            TextView totalItemsText = findViewById(R.id.totalItemsText);
+            TextView totalPriceText = findViewById(R.id.totalPriceText);
+            TextView completedItemsText = findViewById(R.id.completedItemsText);
+
+            if (totalItemsText != null) {
+                totalItemsText.setText(totalItems + " items");
+            }
+            if (totalPriceText != null) {
+                totalPriceText.setText(String.format("Total: $%.2f", totalPrice));
+            }
+            if (completedItemsText != null) {
+                completedItemsText.setText(completedItems + " completed");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error updating shopping list summary", e);
         }
     }
 
@@ -838,5 +917,23 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
                 Toast.makeText(this, "Scanned barcode: " + barcode, Toast.LENGTH_LONG).show();
             }
         }
+    }
+
+    private void showLoading() {
+        runOnUiThread(() -> {
+            View loadingIndicator = findViewById(R.id.loadingIndicator);
+            if (loadingIndicator != null) {
+                loadingIndicator.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
+    private void hideLoading() {
+        runOnUiThread(() -> {
+            View loadingIndicator = findViewById(R.id.loadingIndicator);
+            if (loadingIndicator != null) {
+                loadingIndicator.setVisibility(View.GONE);
+            }
+        });
     }
 }
