@@ -213,6 +213,7 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
                 // Refresh data
                 if (groceryViewModel != null) {
                     groceryViewModel.refreshData();
+                    //Crashing the app
                 }
                 if (reminderViewModel != null) {
                     reminderViewModel.refreshData();
