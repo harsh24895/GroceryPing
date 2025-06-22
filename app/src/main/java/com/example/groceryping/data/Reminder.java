@@ -10,7 +10,7 @@ import java.util.Calendar;
 public class Reminder {
     @PrimaryKey
     @NonNull
-    private String id;
+    private String id = java.util.UUID.randomUUID().toString();
     private String itemName;
     private String message;
     private long timeInMillis;
@@ -22,7 +22,7 @@ public class Reminder {
     public Reminder() {}
 
     public Reminder(String itemName, String message, long timeInMillis, boolean isRepeating, int repeatInterval) {
-        this.id = UUID.randomUUID().toString();
+        this.id = java.util.UUID.randomUUID().toString();
         this.itemName = itemName;
         this.message = message;
         this.timeInMillis = timeInMillis;

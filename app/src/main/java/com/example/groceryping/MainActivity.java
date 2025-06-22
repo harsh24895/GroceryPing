@@ -325,16 +325,25 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
 
             TextView totalItemsText = findViewById(R.id.totalItemsText);
             TextView totalPriceText = findViewById(R.id.totalPriceText);
-            TextView completedItemsText = findViewById(R.id.completedItemsText);
-
+            TextView statusBadgeText = findViewById(R.id.statusBadgeText);
+ 
             if (totalItemsText != null) {
                 totalItemsText.setText(totalItems + " items");
             }
             if (totalPriceText != null) {
                 totalPriceText.setText(String.format("Total: $%.2f", totalPrice));
             }
-            if (completedItemsText != null) {
-                completedItemsText.setText(completedItems + " completed");
+            if (statusBadgeText != null) {
+                int remainingItems = totalItems - completedItems;
+                if (totalItems > 0 && remainingItems == 0) {
+                    statusBadgeText.setText("All Done!");
+                    statusBadgeText.setBackgroundResource(R.drawable.completed_badge);
+                    statusBadgeText.setTextColor(ContextCompat.getColor(this, R.color.white));
+                } else {
+                    statusBadgeText.setText(remainingItems + " remaining");
+                    statusBadgeText.setBackgroundResource(R.drawable.completed_badge_inactive);
+                    statusBadgeText.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
+                }
             }
         } catch (Exception e) {
             Log.e(TAG, "Error updating shopping list summary", e);
@@ -626,7 +635,6 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
                 isRepeating,
                 repeatInterval
             );
-            reminder.setId(UUID.randomUUID().toString());
             reminderViewModel.addReminder(reminder);
             showSnackbar("Reminder added");
         });

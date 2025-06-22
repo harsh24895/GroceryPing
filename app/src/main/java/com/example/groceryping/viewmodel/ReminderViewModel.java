@@ -36,6 +36,10 @@ public class ReminderViewModel extends AndroidViewModel {
 
     public void addReminder(Reminder reminder) {
         executorService.execute(() -> {
+            if (reminder.getId() == null) {
+                reminder.setId(java.util.UUID.randomUUID().toString());
+                Log.w("ReminderViewModel", "Reminder was passed with a null ID. A new ID has been generated.");
+            }
             Log.d("ReminderViewModel", "Adding reminder: " + reminder.getItemName());
             reminderDao.insert(reminder);
             scheduleReminder(reminder);
@@ -44,6 +48,10 @@ public class ReminderViewModel extends AndroidViewModel {
 
     public void updateReminder(Reminder reminder) {
         executorService.execute(() -> {
+            if (reminder.getId() == null) {
+                Log.e("ReminderViewModel", "Attempted to update a reminder with a null ID. Aborting update.");
+                return;
+            }
             Log.d("ReminderViewModel", "Updating reminder: " + reminder.getItemName());
             reminderDao.update(reminder);
             scheduleReminder(reminder);

@@ -146,13 +146,13 @@
                         </LinearLayout>
 
                         <TextView
-                            android:id="@+id/completedItemsText"
+                            android:id="@+id/statusBadgeText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="0 completed"
+                            android:text="0 remaining"
                             android:textSize="14sp"
-                            android:textColor="@color/success"
-                            android:background="@drawable/completed_badge"
+                            android:textColor="@color/text_secondary"
+                            android:background="@drawable/completed_badge_inactive"
                             android:padding="8dp"/>
 
                     </LinearLayout>
