@@ -334,13 +334,12 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
                 totalPriceText.setText(String.format("Total: $%.2f", totalPrice));
             }
             if (statusBadgeText != null) {
-                int remainingItems = totalItems - completedItems;
-                if (totalItems > 0 && remainingItems == 0) {
-                    statusBadgeText.setText("All Done!");
+                if (totalItems == 0) {
+                    statusBadgeText.setText("Done!");
                     statusBadgeText.setBackgroundResource(R.drawable.completed_badge);
                     statusBadgeText.setTextColor(ContextCompat.getColor(this, R.color.white));
                 } else {
-                    statusBadgeText.setText(remainingItems + " remaining");
+                    statusBadgeText.setText(totalItems + " remaining");
                     statusBadgeText.setBackgroundResource(R.drawable.completed_badge_inactive);
                     statusBadgeText.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
                 }
