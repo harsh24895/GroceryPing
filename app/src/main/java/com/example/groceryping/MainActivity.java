@@ -283,8 +283,11 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
                 @Override
                 public void afterTextChanged(Editable s) {
                     String query = s.toString().toLowerCase().trim();
+                    Log.d(TAG, "Search query: '" + query + "'");
                     if (adapter != null) {
                         adapter.filter(query);
+                        // Update empty state based on filtered results
+                        updateGroceryEmptyStateVisibility(adapter.getItemCount() == 0);
                     }
                 }
             });
@@ -301,7 +304,11 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
                 Log.d(TAG, "Grocery items updated. Count: " + items.size());
                 if (adapter != null) {
                     adapter.setItems(items);
-                    updateGroceryEmptyStateVisibility(items.isEmpty());
+                    // Only update empty state if we're not currently filtering
+                    TextInputEditText searchInput = findViewById(R.id.searchInput);
+                    if (searchInput != null && searchInputf.getText().toString().trim().isEmpty()) {
+                        updateGroceryEmptyStateVisibility(items.isEmpty());
+                    }
                     updateShoppingListSummary(items);
                 }
             });

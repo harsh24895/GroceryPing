@@ -1,5 +1,6 @@
 package com.example.groceryping.adapter;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GroceryAdapter extends RecyclerView.Adapter<GroceryAdapter.ViewHolder> {
+    private static final String TAG = "GroceryAdapter";
     private List<GroceryItem> items;
     private List<GroceryItem> filteredItems;
     private final OnItemClickListener listener;
@@ -52,13 +54,16 @@ public class GroceryAdapter extends RecyclerView.Adapter<GroceryAdapter.ViewHold
     public void setItems(List<GroceryItem> newItems) {
         this.items = new ArrayList<>(newItems);
         this.filteredItems = new ArrayList<>(newItems);
+        Log.d(TAG, "Set " + newItems.size() + " items");
         notifyDataSetChanged();
     }
 
     public void filter(String query) {
+        Log.d(TAG, "Filtering with query: '" + query + "', total items: " + items.size());
         filteredItems.clear();
         if (query.isEmpty()) {
             filteredItems.addAll(items);
+            Log.d(TAG, "Empty query, showing all " + items.size() + " items");
         } else {
             for (GroceryItem item : items) {
                 if (item.getName().toLowerCase().contains(query) ||
@@ -67,6 +72,7 @@ public class GroceryAdapter extends RecyclerView.Adapter<GroceryAdapter.ViewHold
                     filteredItems.add(item);
                 }
             }
+            Log.d(TAG, "Filtered to " + filteredItems.size() + " items");
         }
         notifyDataSetChanged();
     }
