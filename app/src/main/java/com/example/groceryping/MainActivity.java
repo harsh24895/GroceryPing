@@ -306,7 +306,7 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
                     adapter.setItems(items);
                     // Only update empty state if we're not currently filtering
                     TextInputEditText searchInput = findViewById(R.id.searchInput);
-                    if (searchInput != null && searchInputf.getText().toString().trim().isEmpty()) {
+                    if (searchInput != null && searchInput.getText().toString().trim().isEmpty()) {
                         updateGroceryEmptyStateVisibility(items.isEmpty());
                     }
                     updateShoppingListSummary(items);
