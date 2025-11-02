@@ -153,7 +153,7 @@ public class MainActivity extends AppCompatActivity implements OnItemClickListen
             showErrorAndFinish("Failed to initialize app: " + e.getMessage());
         }
     }
-
+    //Initailizing the models for gorceryView and reminderModel
     private void initializeViewModels() {
         try {
             // Initialize ViewModels on UI thread
